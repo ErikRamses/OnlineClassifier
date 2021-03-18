@@ -7,12 +7,21 @@ from scipy.signal import butter, lfilter
 import matplotlib.pyplot as plt
 from scipy.signal import freqz
 import scipy.linalg as la
+from sklearn.metrics import mean_squared_error
+from matplotlib.collections import LineCollection
 
-#import mne
+# Loading data from matfiles filtered with bandpass to 1000Hz
+# eeg_calib = scipy.io.loadmat('./data/BCICIV_1calib_1000Hz_mat/BCICIV_calib_ds1a_1000Hz.mat')
+# eeg_eval = scipy.io.loadmat('./data/BCICIV_1eval_1000Hz_mat/BCICIV_eval_ds1a_1000Hz.mat')
+
+# Not filtered signal
+# eeg_calib = scipy.io.loadmat('./data/BCICIV_1_mat/BCICIV_calib_ds1a.mat')
+# eeg_eval = scipy.io.loadmat('./data/BCICIV_1_mat/BCICIV_eval_ds1a.mat')
 
 # Loading data from matfiles filtered with bandpass to 1000Hz
 eeg_calib = scipy.io.loadmat('./data/BCICIV_1calib_1000Hz_mat/BCICIV_calib_ds1a_1000Hz.mat')
 eeg_eval = scipy.io.loadmat('./data/BCICIV_1eval_1000Hz_mat/BCICIV_eval_ds1a_1000Hz.mat')
+# eeg_true = scipy.io.loadmat('./true_labels/BCICIV_eval_ds1a_1000Hz_true_y.mat')
 
 #path_file = './data/BCICIV_1eval_1000Hz_mat/BCICIV_eval_ds1a_1000Hz.mat'
 #Definition of channel types and names.
@@ -110,9 +119,6 @@ def spatialFilter(Ra,Rb):
 # Got from https://github.com/spolsley/common-spatial-patterns
 
 # Sample rate and desired cutoff frequencies (in Hz).
-fs = 1000.0
-lowcut = 0.05
-highcut = 200.0
 
 # Get items from calibration and evaluation files
 items_calib = eeg_calib['cnt'].T
@@ -131,8 +137,19 @@ freq = info[0]
 classes = []
 channels = []
 
+#plt.plot(items[1], 'b',label='Ch CFC3 Vectorized')
+#plt.title('Senales')
+#plt.ylabel('Magnitud')
+#plt.xlabel('Frecuencia')
+#plt.legend(loc='upper right')
+#plt.grid(True)
+#plt.tight_layout()
+#plt.show()
+
 for clase in info[1][0]:
 	classes.append(clase[0])
+
+print(classes)
 
 for channel in info[2][0]:
 	channels.append(channel[0])
@@ -150,43 +167,146 @@ for i in range(len(time_markers)):
 	start = time_markers[i]
 
 difference = min(diffs)
-eeg_complete = []
+
+first = time_markers[0]
+
+y_train = []
 
 # Exclude last 16 trials and iterate inside time markers
-for i in range(len(time_markers)-16):
+for i in range(1, len(time_markers)):
 	trials = []
 	# Cut signals on regular intervals
-	for item in items:
-		trials.append(item[time_markers[i]-difference:time_markers[i]])
-	if true_classes[i] == 1:
-		tasks_foot.append(trials)
-	else:
-		tasks_left.append(trials)
-	eeg_complete.append(trials)
+	if((time_markers[i] - time_markers[i-1]) < difference+10):
+		for item in items_calib:
+			trials.append(item[time_markers[i]-difference:time_markers[i]])
+		if true_classes[i] == 1:
+			tasks_foot.append(trials)
+		else:
+			tasks_left.append(trials)
+
+class_1 = []
+class_2 = [] 
+
+for trial in tasks_foot:
+	for i in range(0, 8000, 1000):
+		canales = []
+		for channel in trial:
+			canales.append(channel[i:i+1000])
+		class_1.append(canales)
+		y_train.append(1)
+
+for trial in tasks_left:
+	for i in range(0, 8000, 1000):
+		canales = []
+		for channel in trial:
+			canales.append(channel[i:i+1000])
+		class_2.append(canales)
+		y_train.append(0)
 
 # Passing tasks to CSP method
-csp = CSP(tasks_left, tasks_foot)
+# csp = CSP(tasks_left, tasks_foot)
+new_data = []
 
-x = []
-y = []
+for i in range(len(items_calib)):
+	new_data.append(items_calib[i][:10000])
+
+new_data = np.asarray(new_data)
+
+data = new_data
+n_rows = len(data)
+n_samples = len(data[0])
+
+print(len(data[2]))
+
+# Plot the EEG
+fig, ax = plt.subplots()
+
+ticklocs = []
+t = np.arange(n_samples)
+ax.set_xlim(0, n_samples)
+ax.set_xticks(np.arange(n_samples))
+dmin = data.min()
+dmax = data.max()
+dr = (dmax - dmin) * 0.7  # Crowd them a bit.
+y0 = dmin
+y1 = (n_rows - 1) * dr + dmax
+ax.set_ylim(y0, y1)
+
+segs = []
+for i in range(n_rows):
+    segs.append(np.column_stack((t, data[:, i])))
+    ticklocs.append(i * dr)
+
+offsets = np.zeros((n_rows, 2), dtype=float)
+offsets[:, 1] = ticklocs
+
+lines = LineCollection(segs, offsets=offsets, transOffset=None)
+ax.add_collection(lines)
+
+# Set the yticks to use axes coordinates on the y axis
+ax.set_yticks(ticklocs)
+ax.set_yticklabels(channels)
+
+ax.set_xlabel('x')
+
+plt.title('CSP Right Hand')
+plt.tight_layout()
+plt.show()
+
+'''
+
+parts = int( len(items[0]) / 1000 )
+eval_signal = []
+ini = 0
+
+for chain in range(1, parts):
+	trial = []
+	for channel in items:
+		trial.append(channel[ini:chain*1000])
+	ini = chain*1000
+	eval_signal.append(trial)
+
+x_1 = []
+x_0 = []
 
 # Concatenate and Get convolved CSP output
-for i in range(len(eeg_complete)):
-	if true_classes[i] == 1:
-		index = 1
-	else:
-		index = 0
+
+for i in range(len(class_1)):
 	filtered = np.array([])
-	for j in range(len(eeg_complete[i])):
-		filtered = np.concatenate([filtered, np.convolve(csp[index][j], eeg_complete[i][j]) ])
-	x.append(filtered)
-	y.append(index)
-	
+	for j in range(len(class_1[i])):
+		filtered = np.concatenate([filtered, np.convolve(csp[1][j], class_1[i][j]) ])
+	x_1.append(filtered)
+
+for i in range(len(class_2)):
+	filtered = np.array([])
+	for j in range(len(class_2[i])):
+		filtered = np.concatenate([filtered, np.convolve(csp[1][j], class_2[i][j]) ])
+	x_0.append(filtered)
+
+X_train = np.concatenate([x_1, x_0])
+
+x_1 = []
+x_0 = []
+y_test = []
+
+for i in range(len(eval_signal)):
+	filtered_1 = np.array([])
+	filtered_0 = np.array([])
+	for j in range(len(eval_signal[i])):
+		filtered_1 = np.concatenate([filtered_1, np.convolve(csp[1][j], eval_signal[i][j]) ])
+		filtered_0 = np.concatenate([filtered_0, np.convolve(csp[0][j], eval_signal[i][j]) ])
+	x_1.append(filtered_1)
+	y_test.append(1)
+	x_0.append(filtered_0)
+	y_test.append(0)
+
+X_test = np.concatenate([x_1, x_0])
+
 # Divide data into training and test sets
-from sklearn.model_selection import train_test_split
+# from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
 
-X_train, X_test, y_train, y_test = train_test_split(x, y, test_size = 0.30)
+# X_train, X_test, y_train, y_test = train_test_split(x, y, test_size = 0.80)
 
 # Single classification with Support Vector Classifier
 from sklearn.svm import SVC
@@ -195,8 +315,13 @@ clf.fit(X_train, y_train)
 
 y_pred = clf.predict(X_test)
 
+des_func = clf.decision_function(X_test)
+
 # Single classification result
 print( confusion_matrix(y_test,y_pred) )
+
+print( mean_squared_error(y_test,y_pred)  )
+
 # print( classification_report(y_test,y_pred) )
 
 # Leave One Out with Support Vector Classifier
@@ -223,3 +348,5 @@ for train, test in loo.split(x):
 
 # List of confusion matrix with true positives
 print(results)
+
+'''
