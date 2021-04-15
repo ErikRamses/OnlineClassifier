@@ -28,6 +28,7 @@ clf = SVC(kernel='linear')
 clf.fit(X_train, y_train)
 
 y_pred = []
+X_test_data = []
 
 for i in range(len(eval_signal)):
 	X_test = []
@@ -37,11 +38,13 @@ for i in range(len(eval_signal)):
 		filt_2 = np.convolve(csp[1][j], filt_1)
 		filtered = np.concatenate([filtered, np.convolve(csp[2][j], filt_2) ])
 	X_test = [filtered]
+	X_test_data.append(filtered)
 	y_pred.append(clf.predict(X_test)[0])
 
 # print(accuracy_score(y_train, y_pred))
+score = clf.score(X_test_data, y_pred)
 
-print(len(y_pred), y_pred)
+print(score)
 
 elapsed_time = time() - start_time
 print("Elapsed time: %.10f seconds." % elapsed_time)

@@ -99,7 +99,9 @@ csp_matrix = {"data": csp, "label": "left_right_foot"}
 #csp_matrix2 = {"data": csp_2, "label": "left_foot"}
 #csp_matrix3 = {"data": csp_3, "label": "right_foot"}
 
-scipy.io.savemat('./data/training/csp-1600.mat', csp_matrix)
+## scipy.io.savemat('./data/training/csp-1600.mat', csp_matrix)
+
+scipy.io.savemat('./data/training/csp-min-trials.mat', csp_matrix)
  
 #scipy.io.savemat('./data/training/csp-left-right.mat', csp_matrix1)
 #scipy.io.savemat('./data/training/csp-left-foot.mat', csp_matrix2)

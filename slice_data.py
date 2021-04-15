@@ -21,11 +21,11 @@ for i in range(len(y_train)):
 	else:
 		class_3.append(x_train[i])
 
-trials_l = {"data": class_1, "label": "left"}
-trials_2 = {"data": class_2, "label": "right"}
-trials_3 = {"data": class_3, "label": "foot"}
+trials_1 = {"data": class_1[:1], "label": "left"}
+trials_2 = {"data": class_2[:1], "label": "right"}
+trials_3 = {"data": class_3[:1], "label": "foot"}
 
-scipy.io.savemat('./data/training/class_1.mat', trials_l)
+scipy.io.savemat('./data/training/class_1.mat', trials_1)
 scipy.io.savemat('./data/training/class_2.mat', trials_2)
 scipy.io.savemat('./data/training/class_3.mat', trials_3)
 print('slice data ready')
