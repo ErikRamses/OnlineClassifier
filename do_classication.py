@@ -10,19 +10,18 @@ from sklearn.svm import SVC
 
 start_time = time()
 
-csp = scipy.io.loadmat('./data/training/csp-1600.mat')['data']
+csp = scipy.io.loadmat('./data/training/csp-min-trials.mat')['data']
 
 # csp_1 = scipy.io.loadmat('./data/training/csp-left-right.mat')['data']
 # csp_2 = scipy.io.loadmat('./data/training/csp-left-foot.mat')['data']
 # csp_3 = scipy.io.loadmat('./data/training/csp-right-foot.mat')['data']
 
-eval_signal = scipy.io.loadmat('./data/training/x_test.mat')['data']
+eval_signal = scipy.io.loadmat('./data/training/x_train_eval.mat')['data']
+y_test = scipy.io.loadmat('./data/training/y_train_eval.mat')['data'][0]
 
 X_train = scipy.io.loadmat('./data/training/x_filtered.mat')['data']
 
 y_train = scipy.io.loadmat('./data/training/y_train.mat')['data'][0]
-
-# y_test = scipy.io.loadmat('./true_labels/BCICIV_eval_ds1a_1000Hz_true_y.mat')['true_y']
 
 clf = SVC(kernel='linear')
 clf.fit(X_train, y_train)
@@ -41,8 +40,10 @@ for i in range(len(eval_signal)):
 	X_test_data.append(filtered)
 	y_pred.append(clf.predict(X_test)[0])
 
-# print(accuracy_score(y_train, y_pred))
-score = clf.score(X_test_data, y_pred)
+y_pred = np.array(y_pred)
+
+print(y_test, y_pred)
+score = accuracy_score(y_test, y_pred)
 
 print(score)
 

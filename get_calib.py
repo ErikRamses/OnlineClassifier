@@ -4,6 +4,7 @@
 import scipy.io
 import numpy as np
 from scipy import signal
+from os import makedirs
 
 classes = ['left', 'right', 'foot'] 
 selected_channels = ['F3', 'Fz', 'F4', 'C3', 'Cz', 'C4', 'O1', 'Pz', 'O2']
@@ -82,13 +83,21 @@ eeg_calib_1f = scipy.io.loadmat('./data/BCICIV_1calib_1000Hz_mat/BCICIV_calib_ds
 eeg_calib_1g = scipy.io.loadmat('./data/BCICIV_1calib_1000Hz_mat/BCICIV_calib_ds1g_1000Hz.mat')
 
 # get x_train and y_train values from eeg continous data
-x_train, y_train = preProcess(eeg_calib_1a)
-x2, y2 = preProcess(eeg_calib_1b)
-x3, y3 = preProcess(eeg_calib_1f)
-x4, y4 = preProcess(eeg_calib_1g)
 
-x_train = np.concatenate([x_train, x2, x3, x4])
-y_train = np.concatenate([y_train, y2, y3, y4])
+x1, y1 = preProcess(eeg_calib_1a)
+print(len(x1), len(y1))
+x2, y2 = preProcess(eeg_calib_1b)
+print(len(x2), len(y2))
+x3, y3 = preProcess(eeg_calib_1f)
+print(len(x3), len(y3))
+x4, y4 = preProcess(eeg_calib_1g)
+print(len(x4), len(y4))
+
+# Add trials limit to variate calibration percentage data
+cut_trials = 167
+
+x_train = np.concatenate([x1, x2, x3, x4[:cut_trials]])
+y_train = np.concatenate([y1, y2, y3, y4[:cut_trials]])
 
 x_data = {"data": x_train, "label": "trials_calib"}
 y_data = {"data": y_train, "label": "classes_calib"}
@@ -97,6 +106,13 @@ scipy.io.savemat('./data/training/x_train.mat', x_data)
 scipy.io.savemat('./data/training/y_train.mat', y_data)
 print('calib data ready')
 
+x_train_eval, y_train_eval = preProcess(eeg_calib_1g)
+x_eval = {"data": x_train_eval, "label": "trials_calib"}
+y_eval = {"data": y_train_eval, "label": "classes_calib"}
+
+scipy.io.savemat('./data/training/x_train_eval.mat', x_eval)
+scipy.io.savemat('./data/training/y_train_eval.mat', y_eval)
+print('eval data ready')
 
 
 

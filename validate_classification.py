@@ -7,6 +7,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score
 from sklearn.svm import SVC
+import scikitplot as skplt
+
 
 start_time = time()
 
@@ -16,13 +18,16 @@ csp = scipy.io.loadmat('./data/training/csp-min-trials.mat')['data']
 # csp_2 = scipy.io.loadmat('./data/training/csp-left-foot.mat')['data']
 # csp_3 = scipy.io.loadmat('./data/training/csp-right-foot.mat')['data']
 
-eval_signal = scipy.io.loadmat('./data/training/x_train.mat')['data']
+eval_signal = scipy.io.loadmat('./data/training/x_train_eval.mat')['data']
+y_test = scipy.io.loadmat('./data/training/y_train_eval.mat')['data'][0]
 
 X_train = scipy.io.loadmat('./data/training/x_filtered.mat')['data']
-y_train = scipy.io.loadmat('./data/training/y_train.mat')['data'][0]
+y_train = scipy.io.loadmat('./data/training/y_train_parted.mat')['data'][0]
 
 clf = SVC(kernel='linear')
 clf.fit(X_train, y_train)
+
+print('model fitted')
 
 y_pred = []
 
@@ -36,7 +41,11 @@ for i in range(len(eval_signal)):
 	X_test = [filtered]
 	y_pred.append(clf.predict(X_test)[0])
 
-print(accuracy_score(y_train, y_pred))
+print(y_test[:50], y_pred[:50])
+print(accuracy_score(y_test, y_pred)*100)
+
+skplt.metrics.plot_roc_curve(y_test, y_test)
+plt.show()
 
 # print(y_train, y_pred)
 

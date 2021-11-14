@@ -6,6 +6,9 @@ import scipy.io
 import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
+import sys
+
+trials = str(sys.argv[1])
 
 start_time = time()
 
@@ -30,11 +33,12 @@ L = 1000
 w, h = signal.freqz(filtered)
 
 # plt.plot(H(filtered))
-plt.title('Frequency response 1 trials/class')
+plt.title('Frequency response '+trials+' trials 1s')
 plt.plot(w/np.pi,20*np.log10(abs(h)))
-plt.xlabel('Normalized frequency (times x pi rad/sample)')
+plt.xlabel('Normalized Frequency')
 plt.ylabel('Magnitude (dB)')
 plt.ylim([-40, 60])
+plt.savefig('./plots/1_sec/freq_response_'+trials+'_trials.png')
 plt.show()
 # csp_1 = scipy.io.loadmat('./data/training/csp-left-right.mat')['data']
 # csp_2 = scipy.io.loadmat('./data/training/csp-left-foot.mat')['data']
